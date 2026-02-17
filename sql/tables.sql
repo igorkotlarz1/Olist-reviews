@@ -49,3 +49,8 @@ CREATE TABLE IF NOT EXISTS order_items (
 	freight_value NUMERIC(10,2),
 	PRIMARY KEY (order_id, product_id, order_item_id)	
 );
+
+CREATE TABLE IF NOT EXISTS category_names(
+	product_category_name TEXT PRIMARY KEY,
+	product_category_name_english TEXT
+);

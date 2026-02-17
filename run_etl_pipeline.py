@@ -43,6 +43,13 @@ PIPELINE_CONFIG = {
         'path': os.path.join('data','olist_order_items_dataset.csv'),
         'func': etl.transform_order_items,
         'dtypes': None
+    },
+
+    'category_names' :
+    {
+        'path': os.path.join('data','product_category_name_translation.csv'),
+        'func': etl.transform_category_names,
+        'dtypes': None
     }
 }
 

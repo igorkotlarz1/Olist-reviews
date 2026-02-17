@@ -51,6 +51,9 @@ def transform_order_items(df: pd.DataFrame):
 
     return df
 
+def transform_category_names(df: pd.DataFrame):
+    return df
+
 #Function responsible for loading transformed data into the DB (due to the size of the data it's performed in chunks of 1000)   
 def load_db(df: pd.DataFrame, con_engine, table_name: str):
     try:
