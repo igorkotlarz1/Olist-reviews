@@ -56,4 +56,4 @@ JOIN order_items_agg AS i ON o.order_id = i.order_id
 JOIN products AS p ON i.most_imp_product_id = p.product_id
 JOIN reviews AS r ON o.order_id = r.order_id
 LEFT JOIN category_names AS c ON p.product_category_name = c.product_category_name
-WHERE o.order_status = 'delivered' AND o.order_delivered_customer_date IS NOT NULL;
+WHERE o.order_status = 'delivered' AND o.order_delivered_customer_date IS NOT NULL 
