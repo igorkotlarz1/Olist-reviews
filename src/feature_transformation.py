@@ -2,15 +2,18 @@ import pandas as pd
 import numpy as np
 
 from category_encoders import TargetEncoder
+from sklearn.exceptions import NotFittedError
+
+import joblib
+import os
 
 class Transformer:
     def __init__(self, smoothing: int = 10):
         self.smoothing = smoothing
-        self.encoder = TargetEncoder(cols=['category'], smoothing = self.smoothing)
+        self.encoder = None
         self.quantiles = {}
 
     def _log_transform(self, X: pd.DataFrame):
-
         X_transformed = X.copy()
         X_transformed['log_total_price'] = np.log1p(X['total_price'])
         X_transformed['log_total_freight'] = np.log1p(X['total_freight'])
@@ -38,7 +41,6 @@ class Transformer:
         }
 
     def _clip_outliers(self, X: pd.DataFrame):
-
         X_clipped = X.copy()
         
         lower_seller = self.quantiles['lower_seller']
@@ -58,21 +60,45 @@ class Transformer:
         return X_clipped
 
     def fit(self, X: pd.DataFrame, y: pd.DataFrame):
-
         self._get_clip_quantiles(X)
-        self.encoder.fit(X, y)
+
+        self.encoder = TargetEncoder(cols=['category'], smoothing = self.smoothing)
+        self.encoder.fit(X[['category']], y)
 
         return self
 
-    def transform(self, X: pd.DataFrame):
-        
+    def transform(self, X: pd.DataFrame):       
         X_log = self._log_transform(X)
         X_clip = self._clip_outliers(X_log)
-        X_encoded = self.encoder.transform(X_clip)
+        X_encoded = X_clip.copy()
+
+        X_encoded['category'] = self.encoder.transform(X_encoded['category'])
 
         return X_encoded
     
-    def fit_transform(self, X: pd.DataFrame, y:pd.DataFrame):
-
+    def fit_transform(self, X: pd.DataFrame, y: pd.DataFrame):
         self.fit(X, y)
         return self.transform(X)
+
+    def save(self, filename: str = 'target_encoder.pkl'):
+        if self.encoder is None:
+            raise NotFittedError('You must fit the Target Encoder first!')
+
+        if not filename.endswith('.pkl'):
+            filename += '.pkl'
+
+        path = os.path.join('..','models', filename)
+        joblib.dump(self.encoder, path)
+
+        print(f'Saved the target encoder to {filename}')
+
+    def load(self, filename: str = 'target_encoder.pkl'):
+        if not filename.endswith('.pkl'):
+            filename += '.pkl'
+        
+        path = os.path.join('..','models', filename)
+
+        if not os.path.exists(path):
+            raise ValueError(f'Could not find the file: {filename}!')
+        
+        self.encoder = joblib.load(path)
