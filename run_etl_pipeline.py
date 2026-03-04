@@ -2,7 +2,9 @@ from src.db import get_engine
 import src.etl as etl
 import os
 
-PIPELINE_CONFIG = {
+from typing import Any, Dict
+
+PIPELINE_CONFIG: Dict[str, Dict[str, Any]] = {
     'customers' : 
     {
         'path': os.path.join('data', 'olist_customers_dataset.csv'),
@@ -53,7 +55,12 @@ PIPELINE_CONFIG = {
     }
 }
 
-def main():
+def main() -> None:
+    """
+    The main entry point for the ETL pipeline execution.
+    
+    Orchestrates the connection to the database, iterates over the defined PIPELINE_CONFIG, extracts data from CSV files, applies  transformations, and loads the data into the corresponding tables.
+    """
     try:
         engine = get_engine()
 
@@ -79,7 +86,7 @@ def main():
                 #transforming the data
                 df_transformed = transform_func(df)
 
-                #loading the data into the pg DB
+                #loading the data into the corresponding table in the postgres DB
                 etl.load_db(df_transformed, conn, table_name)
 
             except Exception as e:

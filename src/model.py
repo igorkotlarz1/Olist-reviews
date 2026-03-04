@@ -11,10 +11,24 @@ import pandas as pd
 
 import joblib
 import os
-
+from typing import Dict, Any
 class Model:
-    def __init__(self, model_type, seed, n_trials=100):
+    """
+    A ML model manager. 
+    Handles hyperparameter tuning using Optuna, cross-validation training, and model management for XGBoost and Random Forest classifiers. 
+    """
+    def __init__(self, model_type: str, seed: int, n_trials:int =100) -> None:
+        """ 
+        Initializes the Model manager.
 
+        Args:
+            model_type (str): The type of model to train ('xgb' for XGBoost, 'rf' for Random Forest).
+            seed (int): Random seed for reproducibility.
+            n_trials (int, optional): The number of Optuna trials. Defaults to 100.
+
+        Raises:
+            ValueError: If an unsupported model_type is provided.
+        """
         model_type = model_type.lower()
         if model_type not in ['xgb', 'rf']:
             raise ValueError("You need to specify the model type: either 'xgb' or 'rf'!")
@@ -28,10 +42,25 @@ class Model:
         self.scale_weight_ = None
 
     def _check_fitted(self):
+        """
+        Validates whether the final model has been trained.
+
+        Raises:
+            NotFittedError: If the best_model_ attribute is None.
+        """
         if self.best_model_ is None:
             raise NotFittedError('You must fit the model first!')
 
-    def _get_model_params(self, trial: optuna.trial.Trial):
+    def _get_model_params(self, trial: optuna.trial.Trial) -> Dict[str, Any]:
+        """
+        Defines the hyperparameter search space for Optuna trials.
+
+        Args:
+            trial (optuna.trial.Trial): The Optuna trial object.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing suggested hyperparameters.
+        """
         if self.model_type == 'xgb':
             return {
                 'max_depth': trial.suggest_int('max_depth', 3, 7),
@@ -59,7 +88,19 @@ class Model:
                 'random_state': self.SEED
             }
 
-    def _objective(self, trial: optuna.trial.Trial, X_train: pd.DataFrame, y_train: pd.DataFrame):
+    def _objective(self, trial: optuna.trial.Trial, X_train: pd.DataFrame, y_train: pd.DataFrame) -> float:
+        """
+        The objective function used in Optuna optimization.
+        Evaluates the model using Stratified K-Fold CV.
+
+        Args:
+            trial (optuna.trial.Trial): Optuna trial object.
+            X_train (pd.DataFrame): The training input samples.
+            y_train (pd.DataFrame): The target labels.
+
+        Returns:
+            float: The mean F1 score across all CV folds.
+        """
         params = self._get_model_params(trial)
 
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.SEED)
@@ -82,14 +123,34 @@ class Model:
 
         return np.mean(scores)
 
-    def fit(self, X: pd.DataFrame, y: pd.DataFrame):
+    def fit(self, X: pd.DataFrame, y: pd.DataFrame) -> Any:
+        """
+        Refits the previously tued best model on a given dataset.
+
+        Args:
+            X (pd.DataFrame): The training input samples.
+            y (pd.DataFrame): The target labels.
+
+        Returns:
+            Any: The fitted estimator.
+        """
         self._check_fitted()
 
         self.best_model_.fit(X, y)
 
         return self.best_model_
 
-    def tune_and_fit(self, X: pd.DataFrame, y: pd.DataFrame):
+    def tune_and_fit(self, X: pd.DataFrame, y: pd.DataFrame) -> Any:
+        """
+        Executes the full pipeline of hyperparameter tuning and training the final model on the entire dataset.
+
+        Args:
+            X (pd.DataFrame): The training input samples.
+            y (pd.DataFrame): The target labels.
+
+        Returns:
+            Any: The fitted and optimized estimator.
+        """
         self.scale_weight_ = (y==0).sum() / (y==1).sum()
 
         study = optuna.create_study(study_name='XGB_study', direction='maximize')
@@ -110,7 +171,48 @@ class Model:
 
         return self.best_model_
 
-    def save(self, filename: str = 'best_model.pkl'):
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Predicts class labels for the given input data.
+
+        Args:
+            X (pd.DataFrame): The input samples to predict.
+
+        Returns:
+            np.ndarray: An array of predicted class labels (0 or 1).
+            
+        Raises:
+            NotFittedError: If the model has not been fitted.
+        """
+        self._check_fitted()
+        return self.best_model_.predict(X)
+
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Predicts class probabilities for the given input data.
+
+        Args:
+            X (pd.DataFrame): The input samples to predict.
+
+        Returns:
+            np.ndarray: An array of probabilities for each class.
+            
+        Raises:
+            NotFittedError: If the model has not been fitted.
+        """
+        self._check_fitted()
+        return self.best_model_.predict_proba(X)
+
+    def save(self, filename: str = 'best_model.pkl') -> None:
+        """
+        Dumps the fitted final model to a pickle file.
+
+        Args:
+            filename (str, optional): Name of the file to save. Defaults to 'best_model.pkl'.
+
+        Raises:
+            NotFittedError: If the model has not been tuned and fitted yet.
+        """
         self._check_fitted()
 
         if not filename.endswith('.pkl'):
@@ -121,7 +223,16 @@ class Model:
 
         print(f'Saved the best {self.model_type.upper()} model to {filename}')
 
-    def load(self, filename: str = 'best_model.pkl'):
+    def load(self, filename: str = 'best_model.pkl') -> None:
+        """
+        Loads a pre-trained model from a pickle file.
+
+        Args:
+            filename (str, optional): Name of the file to load. Defaults to 'best_model.pkl'.
+
+        Raises:
+            ValueError: If the specified file cannot be found in the models/ directory.
+        """
         if not filename.endswith('.pkl'):
             filename += '.pkl'
         
@@ -132,10 +243,3 @@ class Model:
         
         self.best_model_ = joblib.load(path)
         
-    def predict(self, X: pd.DataFrame):
-        self._check_fitted()
-        return self.best_model_.predict(X)
-
-    def predict_proba(self, X: pd.DataFrame):
-        self._check_fitted()
-        return self.best_model_.predict_proba(X)
