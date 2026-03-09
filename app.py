@@ -43,7 +43,7 @@ with col1:
     num_items = st.number_input("Number of items in the order", min_value=1, value=1, step=1)
     desc_len = st.number_input("Most important product's description length", min_value=0, value=750, step=50)
     category = st.selectbox("Most important product's category", categories)
-    volume_l = st.number_input("Most important product's volume (liters)", min_value=0.0, value=10.0, step=5.0)
+    weight_g = st.number_input("Most important product's weight (kg)", min_value=0.05, value=1.0, step=0.5)
 
 with col2:
     st.subheader("Delivery details")
@@ -57,16 +57,18 @@ st.markdown("---")
 if st.button("Analyse the order", use_container_width=True, type="primary"):
     log_total_freight = np.log1p(freight_value)
 
+    # Creating a new DF for every set of parameters
     input_data = pd.DataFrame({
         'num_items':[num_items], 
         'desc_len': [desc_len], 
         'category': [category], 
-        'volume_l': [volume_l], 
+        'weight_g': [weight_g * 1000], 
         'delivery_days': [delivery_days], 
         'estimated_delivery_diff': [estimated_delivery_diff], 
         'log_total_freight': [log_total_freight]   
     })
 
+    # encoding category column
     input_data['category'] = encoder.transform(input_data[['category']])
 
     if model_selection == 'XGBoost':
