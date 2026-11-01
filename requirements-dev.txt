@@ -1,0 +1,6 @@
+-r requirements.txt
+pytest>=8.0
+jupyter
+matplotlib>=3.8
+seaborn>=0.13
+shap>=0.45

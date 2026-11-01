@@ -1,7 +1,12 @@
-streamlit
-pandas
-numpy
-xgboost
-scikit-learn
-category_encoders
-joblib
+# the saved model in models/ was built with these two exact versions
+scikit-learn==1.9.1
+xgboost==3.4.1
+
+pandas>=2.2
+numpy>=1.26
+sqlalchemy>=2.0
+psycopg[binary]>=3.1
+python-dotenv>=1.0
+optuna>=4.0
+joblib>=1.4
+streamlit>=1.40

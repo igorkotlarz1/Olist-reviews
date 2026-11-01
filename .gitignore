@@ -1,16 +1,18 @@
-#csv data
+# Kaggle CSVs (download them, see README)
 data/
 
-#python cache
+# Python
 __pycache__/
 *.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
 
-#passwords and credentials
+# credentials
 .env
 .streamlit/secrets.toml
 
-#virtual env
-.venv/
-env/
-
+# IDE
 .idea/
+.vscode/
